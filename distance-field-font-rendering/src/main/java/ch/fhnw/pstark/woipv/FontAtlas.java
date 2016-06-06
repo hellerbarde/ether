@@ -83,18 +83,18 @@ public class FontAtlas
 			font = baseFont.deriveFont(Font.PLAIN, fontsize);
 
 		} catch (FontFormatException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 		
 		Set<GlyphName> glyphSet = new TreeSet<GlyphName>(new GlyphNameComparator());
 		
 		for(char f : characters.toCharArray()){
 			char[] c = {f};
-			BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+			BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 			Rectangle2D glyphbounds = font.getStringBounds(new String(c), image.createGraphics().getFontRenderContext());
 			image = null;
 			
@@ -102,7 +102,7 @@ public class FontAtlas
 			BufferedImage glyph = new BufferedImage((int)glyphbounds.getWidth()+1, (int)(glyphbounds.getHeight()*1.3), BufferedImage.TYPE_4BYTE_ABGR);
 			Graphics2D gc = glyph.createGraphics();
 			gc.setFont(font);
-			gc.setColor(Color.BLACK);
+			gc.setColor(Color.WHITE);
 			gc.drawChars(c,0, 1, 0, (int)glyphbounds.getHeight()+1);
 			//BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
 			
@@ -249,9 +249,9 @@ public class FontAtlas
 
 		public Texture(int width, int height)
 		{
-			image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+			image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 			graphics = image.createGraphics();
-			graphics.setColor(Color.WHITE);
+			graphics.setColor(Color.BLACK);
 			graphics.fill(new Rectangle(width, height));
 			
 			root = new Node(0,0, width, height);

@@ -32,21 +32,31 @@
 package ch.fhnw.pstark.woipv;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferShort;
 import java.awt.image.DataBufferUShort;
+import java.awt.image.SampleModel;
+import java.awt.image.SinglePixelPackedSampleModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+
 import ch.fhnw.ether.controller.DefaultController;
 import ch.fhnw.ether.controller.IController;
+import ch.fhnw.ether.image.GLGPUImage;
 import ch.fhnw.ether.image.IGPUImage;
+import ch.fhnw.ether.image.IImage.AlphaMode;
 import ch.fhnw.ether.image.IImage.ComponentFormat;
 import ch.fhnw.ether.image.IImage.ComponentType;
 import ch.fhnw.ether.platform.Platform;
@@ -185,7 +195,7 @@ public final class CustomShaderExample {
 			try{
 				
 				// Create view
-				IView view = new DefaultView(controller, 100, 100, 500, 500, new IView.Config(ViewType.INTERACTIVE_VIEW, 0, IView.ViewFlag.SMOOTH_LINES), "Test");
+				IView view = new DefaultView(controller, 100, 100, 1280, 720, new IView.Config(ViewType.INTERACTIVE_VIEW, 0, IView.ViewFlag.GRID), "Test");
 	
 				// Create scene and add triangle
 				IScene scene = new DefaultScene(controller);
@@ -210,7 +220,8 @@ public final class CustomShaderExample {
 				
 				
 				FontAtlas atlasGenerator = new FontAtlas();
-				BufferedImage bi = atlasGenerator.generate("DejaVuSans.ttf", 72, 1024, 1024, 5, " !\"#$%&'()*+,-./0123456789:;<=>?"+
+				BufferedImage bi = atlasGenerator.generate("arial.ttf", 48, 1024, 1024, 5, 
+						" !\"#$%&'()*+,-./0123456789:;<=>?"+
 		                "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"+
 		                "`abcdefghijklmnopqrstuvwxyz{|}~");
 				
@@ -244,12 +255,46 @@ public final class CustomShaderExample {
 				    throw new IllegalArgumentException("Not implemented for data buffer type: " + dataBuffer.getClass());
 				}
 				
+				/*DistanceFieldGenerator dfg = new DistanceFieldGenerator();
+				dfg.setSpread(10);
+				dfg.setDownscale(4);
+				BufferedImage out = dfg.generateDistanceField(bi);
+				try
+				{
+					ImageIO.write(out, "png", new File("atlas2.png"));
+				}
+				catch(IOException e)
+				{
+					System.out.println(e.getStackTrace());
+				}
+				*/
 				
+				byte[] pixelDataRaw = ((DataBufferByte) dataBuffer).getData();
 				
+				byte[] distanceMap = DistanceFieldUtils.make_distance_mapb(pixelDataRaw, bi.getWidth(), bi.getHeight());
 				
-				//IGPUImage t = IGPUImage.create(bi.getWidth(), bi.getHeight()+1, ComponentType.BYTE, ComponentFormat.RGB, byteBuffer);
+				BufferedImage new_image = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+				byte[] array = ((DataBufferByte) new_image.getRaster().getDataBuffer()).getData();
+				System.out.println("new " + array.length);
+				System.out.println("pixelDataRaw " + pixelDataRaw.length);
+				System.out.println("distanceMap " + distanceMap.length);
+				System.arraycopy(distanceMap, 0, array, 0, array.length);
+				
+				try
+				{
+					ImageIO.write(new_image, "png", new File("atlas4.png"));
+				}
+				catch(IOException e)
+				{
+					System.out.println(e.getStackTrace());
+				}
+				
+				// I don't understand why this is not working...
+				//IGPUImage t = IGPUImage.create(bi.getWidth(), bi.getHeight(), ComponentType.BYTE, ComponentFormat.G, byteBuffer);
+				//IGPUImage t = new GLGPUImage(bi.getWidth(), bi.getHeight(), ComponentType.BYTE, ComponentFormat.G, AlphaMode.PRE_MULTIPLIED, byteBuffer);
+				
 				//IGPUImage t = IGPUImage.read(SimpleLightExample.class.getResource("/textures/test_woipv.jpg"));
-				IGPUImage t = IGPUImage.read(new File("atlas.png"));
+				IGPUImage t = IGPUImage.read(new File("atlas4.png"));
 				
 				float[] texCoords = {0,0, 1,0, 1,1,   0,0, 1,1, 0,1};
 				
