@@ -30,50 +30,47 @@
   Modifications for use with ether by Philip Stark
   The modifications are licensed under the MIT License.
  */
-
-
 uniform sampler2D colorMap;
-
-
-// Experiments to make the shader configurable from the program
-// Had troubles with the data layout.
-//in float vs_glow_width; // 0.7
-//in float vs_line_width; // 0.05
-/*in vec3 vs_fill_color;
-in vec3 vs_line_color;
-in vec3 vs_glow_color;*/
-
-const vec3 fill_color = vec3(1, 1, 1);
-const vec3 line_color = vec3(0, 0, 0);
-const vec3 glow_color = vec3(0, 1, 0);
 
 in vec4 vsColor;
 in vec2 vsTexCoord;
 
 out vec4 FragColor;
 
+vec3 fill_color    = vec3(1.0,1.0,1.0);
 const float glyph_center   = 0.50;
-const float outline_center = 0.7; // originally 0.55
-const float glow_center    = 2.0; // a good value was 1.25
+
+/*vec3 line_color  = vec3(0.0,0.0,0.0);
+const float outline_center = 0.55;
+vec3 glow_color     = vec3(1.0,1.0,1.0);
+const float glow_center    = 1.25;*/
+
 void main(void)
 {
 
     vec4  color = texture(colorMap, vsTexCoord);
     float dist  = color.r;
+
+    // Calculate the width according to the x and y derivatives of the
+    // distance value
     float width = fwidth(dist);
+
     float alpha = smoothstep(glyph_center-width, glyph_center+width, dist);
 
     // pass through raw values (for debugging) -------------------------------
-    /*FragColor = vec4(color.r,color.r,color.r,1);*/
+    //FragColor = vec4(color.r,color.r,color.r,1);
 
     // Just Fill ----------------------------------------------------------
     FragColor = vec4(fill_color, alpha);
-
 
     // Fill + Outline --------------------------------------------------------
     /*float mu = smoothstep(outline_center-width, outline_center+width, dist);
     vec3 rgb = mix(line_color, fill_color, mu);
     FragColor = vec4(rgb, max(alpha,mu));*/
+
+
+
+
 
 
 
@@ -84,21 +81,21 @@ void main(void)
       return fill color
     else
       return glow color */
-    vec3 rgb = mix(glow_color, fill_color, alpha);
+    /*vec3 rgb = mix(glow_color, fill_color, alpha);*/
 
     // Calculate where in the glow we are.
-    float mu = smoothstep(glyph_center, glow_center, dist);
+    /*float mu = smoothstep(glyph_center, glow_center, dist);*/
     //float mu = smoothstep(glyph_center, glow_center, sqrt(dist));
 
     // if we are in the fill, paint opaque.
-    color = vec4(rgb, max(alpha, mu));
+    /*color = vec4(rgb, max(alpha, mu));*/
 
     // Are we in the outline?
-    float beta = smoothstep(outline_center-width, outline_center+width, dist);
+    /*float beta = smoothstep(outline_center-width, outline_center+width, dist);*/
 
     // if we are in the outline, paint the outline color, else the
     // fill or glow
-    rgb = mix(line_color, color.rgb, beta);
+    /*rgb = mix(line_color, color.rgb, beta);*/
 
     // construct the return color.
     //FragColor = vec4(rgb, max(color.a, beta));

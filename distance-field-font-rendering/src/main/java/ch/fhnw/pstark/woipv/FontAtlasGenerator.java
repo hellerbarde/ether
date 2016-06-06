@@ -12,7 +12,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import javax.imageio.*;
-import java.awt.Rectangle;
+
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
@@ -24,17 +24,17 @@ import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.image.*;
 
-public class FontAtlas
+public class FontAtlasGenerator
 {	
 	public static void main(String args[])
 	{
 		System.out.println("Working Directory = " +
 	              System.getProperty("user.dir"));
 
-		FontAtlas atlasGenerator = new FontAtlas();
+		FontAtlasGenerator atlasGenerator = new FontAtlasGenerator();
 		BufferedImage bi = atlasGenerator.generate("DejaVuSans.ttf", 72, 1024, 1024, 5, " !\"#$%&'()*+,-./0123456789:;<=>?"+
                 "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"+
-                "`abcdefghijklmnopqrstuvwxyz{|}~");
+                "`abcdefghijklmnopqrstuvwxyz{|}~").getImage();
 		
 		ByteBuffer byteBuffer;
 		DataBuffer dataBuffer = bi.getRaster().getDataBuffer();
@@ -69,13 +69,13 @@ public class FontAtlas
 		System.out.println(byteBuffer);
 	}
 
-	public BufferedImage generate(String fontpath, float fontsize, int width, int height, int padding, String characters)
+	public FontAtlas generate(String fontpath, float fontsize, int width, int height, int padding, String characters)
 	{
 
 		Font baseFont = null;
 		Font font = null;
 		try {
-			URL fonturl = FontAtlas.class.getResource("/fonts/" + fontpath);
+			URL fonturl = FontAtlasGenerator.class.getResource("/fonts/" + fontpath);
 			System.out.println("Font = " +
 					fonturl);
 			baseFont = Font.createFont(Font.TRUETYPE_FONT, new File(fonturl.getFile()));
@@ -109,24 +109,20 @@ public class FontAtlas
 			glyphSet.add(new GlyphName(glyph, new String(c)));
 		}
 		
-		List<Texture> textures = new ArrayList<Texture>();
-		Texture texture = new Texture(width, height);
-		textures.add(new Texture(width, height));
+		FontAtlas texture = new FontAtlas(width, height);
 		
 		int count = 0;
 		
 		for(GlyphName glyph : glyphSet)
 		{
-			boolean added = false;
-			
 			System.out.println("Adding " + glyph.name + " to atlas (" + (++count) + ")");
 			texture.AddImage(glyph.image, glyph.name, padding);
 		}
 		
 		count = 0;
 		texture.Write(width, height);
-		
-		return texture.getImage();
+		return texture;
+		//return texture.getImage();
 	}
 	
 	private class GlyphName 
@@ -155,157 +151,6 @@ public class FontAtlas
 			else
 			{
 				return image1.name.compareTo(image2.name);
-			}
-		}
-	}
-	
-	public class Texture
-	{
-		private class Node
-		{
-			public Rectangle rect;
-			public Node child[];
-			public BufferedImage image;
-			
-			public Node(int x, int y, int width, int height)
-			{
-				rect = new Rectangle(x, y, width, height);
-				child = new Node[2];
-				child[0] = null;
-				child[1] = null;
-				image = null;
-			}
-			
-			public boolean IsLeaf()
-			{
-				return child[0] == null && child[1] == null;
-			}
-			
-			// Algorithm from http://www.blackpawn.com/texts/lightmaps/
-			public Node Insert(BufferedImage image, int padding)
-			{
-				if(!IsLeaf())
-				{
-					Node newNode = child[0].Insert(image, padding);
-					
-					if(newNode != null)
-					{
-						return newNode;
-					}
-					
-					return child[1].Insert(image, padding);
-				}
-				else
-				{
-					if(this.image != null) 
-					{
-						return null; // occupied
-					}
-					
-					if(image.getWidth() > rect.width || image.getHeight() > rect.height)
-					{
-						return null; // does not fit
-					}
-										
-					if(image.getWidth() == rect.width && image.getHeight() == rect.height) 
-					{						
-						this.image = image; // perfect fit
-						return this;
-					}
-					
-					int dw = rect.width - image.getWidth();
-					int dh = rect.height - image.getHeight();
-					
-					if(dw > dh)
-					{
-						child[0] = new Node(rect.x, rect.y, image.getWidth(), rect.height);
-						child[1] = new Node(padding+rect.x+image.getWidth(), rect.y, rect.width - image.getWidth() - padding, rect.height);
-					}
-					else
-					{
-						child[0] = new Node(rect.x, rect.y, rect.width, image.getHeight());
-						child[1] = new Node(rect.x, padding+rect.y+image.getHeight(), rect.width, rect.height - image.getHeight() - padding);
-					}
-					/*if(dw > dh)
-					{
-						child[0] = new Node(rect.x, rect.y, image.getWidth(), rect.height);
-						child[1] = new Node(padding+rect.x+image.getWidth(), rect.y, rect.width - image.getWidth(), rect.height);
-					}
-					else
-					{
-						child[0] = new Node(rect.x, rect.y, rect.width, image.getHeight());
-						child[1] = new Node(rect.x, padding+rect.y+image.getHeight(), rect.width, rect.height - image.getHeight());
-					}*/
-					
-					return child[0].Insert(image, padding);
-				}
-			}
-		}
-		
-		private BufferedImage image;
-		private Graphics2D graphics;
-		private Node root;
-		private Map<String, Rectangle> rectangleMap;
-
-		public Texture(int width, int height)
-		{
-			image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-			graphics = image.createGraphics();
-			graphics.setColor(Color.BLACK);
-			graphics.fill(new Rectangle(width, height));
-			
-			root = new Node(0,0, width, height);
-			rectangleMap = new TreeMap<String, Rectangle>();
-		}
-		
-		public boolean AddImage(BufferedImage image, String name, int padding)
-		{
-			Node node = root.Insert(image, padding);
-			
-			if(node == null)
-			{
-				return false;				
-			}
-			
-			rectangleMap.put(name, node.rect);
-			graphics.drawImage(image, null, node.rect.x, node.rect.y);
-			
-			
-			return true;	
-		}
-		
-		public BufferedImage getImage(){
-			return image;
-		}
-		
-		public void Write(int width, int height)
-		{			
-			try
-			{
-				ImageIO.write(image, "png", new File("atlas.png"));
-				
-//				BufferedWriter atlas = new BufferedWriter(new FileWriter(name + ".txt"));
-//				
-//				for(Map.Entry<String, Rectangle> e : rectangleMap.entrySet())
-//				{
-//					Rectangle r = e.getValue();
-//					String keyVal = e.getKey();
-//					if (fileNameOnly)
-//						keyVal = keyVal.substring(keyVal.lastIndexOf('/') + 1);
-//					if (unitCoordinates)
-//					{
-//						atlas.write(keyVal + " " + r.x/(float)width + " " + r.y/(float)height + " " + r.width/(float)width + " " + r.height/(float)height);
-//					}
-//					else
-//						atlas.write(keyVal + " " + r.x + " " + r.y + " " + r.width + " " + r.height);
-//					atlas.newLine();
-//				}
-//				
-//				atlas.close();
-			}
-			catch(IOException e)
-			{
-				
 			}
 		}
 	}
