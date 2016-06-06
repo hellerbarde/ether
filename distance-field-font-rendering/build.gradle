@@ -1,0 +1,6 @@
+description = """A woipv project for distance-field based OpenGL font rendering"""
+
+dependencies {
+    compile project(":ether-core")
+    compile project(":ether-mapping")
+}
