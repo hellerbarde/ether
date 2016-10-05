@@ -17,10 +17,7 @@ import ch.fhnw.ether.platform.Platform;
 import ch.fhnw.ether.platform.Platform.OS;
 import ch.fhnw.util.IOUtilities;
 import ch.fhnw.util.Log;
-import de.humatic.mmj.CoreMidiDevice;
-import de.humatic.mmj.MidiInput;
-import de.humatic.mmj.MidiOutput;
-import de.humatic.mmj.MidiSystem;
+
 
 public class MidiIO {
 	private static Log log = Log.create();
